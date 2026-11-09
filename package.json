@@ -1,0 +1,68 @@
+{
+  "name": "env-guard",
+  "version": "0.0.0",
+  "description": "Validate environment variables at startup with typed values, clear errors, and an auto-generated .env.example.",
+  "license": "MIT",
+  "keywords": [
+    "env",
+    "environment",
+    "validation",
+    "typescript",
+    "config",
+    "dotenv",
+    "node"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ramsha1554/env-guard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ramsha1554/env-guard/issues"
+  },
+  "homepage": "https://github.com/ramsha1554/env-guard#readme",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json",
+    "./cli": {
+      "types": "./dist/cli.d.ts",
+      "import": "./dist/cli.js",
+      "require": "./dist/cli.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "prepublishOnly": "npm run lint && npm run typecheck && npm test && npm run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.10.2",
+    "@typescript-eslint/eslint-plugin": "^8.17.0",
+    "@typescript-eslint/parser": "^8.17.0",
+    "eslint": "^10.14.0",
+    "eslint-config-prettier": "^10.0.0",
+    "prettier": "^3.3.1",
+    "tsup": "^9.0.0",
+    "typescript": "^5.7.3",
+    "vitest": "^5.1.0"
+  }
+}
