@@ -4,68 +4,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { envGuard } from './envGuard';
-import type { EnvField, EnvGuardSchema, EnvSource, InferEnv } from './types';
-
-export type CliOptions = {
-  schemaPath?: string;
-  outputPath?: string;
-};
-
-export type CliCommand = 'generate' | 'check' | 'help';
-
-export type EnvExampleOptions = {
-  includeDescriptions?: boolean;
-};
-
-function formatValue(value: unknown): string {
-  if (typeof value === 'string') {
-    return value;
-  }
-
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value);
-  }
-
-  return String(value ?? '');
-}
-
-function exampleValueFor(field: EnvField): string {
-  if ('default' in field && field.default !== undefined) {
-    return formatValue(field.default);
-  }
-
-  switch (field.type) {
-    case 'string':
-      return field.secret ? 'replace_me' : 'example';
-    case 'number':
-      return '3000';
-    case 'boolean':
-      return 'false';
-    case 'enum':
-      return String(field.values[0] ?? 'example');
-    case 'url':
-      return 'https://example.com';
-    default:
-      return '';
-  }
-}
-
-export function generateEnvExample<T extends EnvGuardSchema>(schema: T, options: EnvExampleOptions = {}): string {
-  const lines: string[] = [];
-
-  for (const [key, field] of Object.entries(schema) as [string, EnvField][]) {
-    if (options.includeDescriptions && field.description) {
-      lines.push(`# ${field.description}`);
-    }
-
-    const sample = exampleValueFor(field);
-    const placeholder = field.secret ? 'replace_me' : sample;
-    lines.push(`${key}=${placeholder}`);
-  }
-
-  return lines.join('\n');
-}
+import { checkEnvironment, generateEnvExample } from './cliCore';
+import type { EnvGuardSchema } from './types';
 
 async function loadSchemaFromFile(schemaPath: string): Promise<EnvGuardSchema> {
   const resolvedPath = path.resolve(process.cwd(), schemaPath);
@@ -101,7 +41,7 @@ function getOption(args: string[], name: string): string | undefined {
 }
 
 function printUsage(): void {
-  console.log(`env-guard CLI
+  process.stdout.write(`env-guard CLI
 
 Usage:
   env-guard generate --schema <path> [--output <path>]
@@ -110,7 +50,7 @@ Usage:
 `);
 }
 
-export async function runCli(argv: string[] = process.argv.slice(2)): Promise<number> {
+async function runCli(argv: string[] = process.argv.slice(2)): Promise<number> {
   const [command, ...args] = argv;
 
   if (!command || command === 'help' || command === '--help' || command === '-h') {
@@ -121,7 +61,7 @@ export async function runCli(argv: string[] = process.argv.slice(2)): Promise<nu
   if (command === 'generate') {
     const schemaPath = getOption(args, '--schema');
     if (!schemaPath) {
-      console.error('Missing required --schema value for generate');
+      process.stderr.write('Missing required --schema value for generate\n');
       printUsage();
       return 1;
     }
@@ -133,36 +73,39 @@ export async function runCli(argv: string[] = process.argv.slice(2)): Promise<nu
     if (outputPath) {
       const resolvedPath = path.resolve(process.cwd(), outputPath);
       fs.writeFileSync(resolvedPath, `${contents}\n`, 'utf8');
-      console.log(`Wrote .env.example to ${resolvedPath}`);
+      process.stdout.write(`Wrote .env.example to ${resolvedPath}\n`);
       return 0;
     }
 
-    console.log(contents);
+    process.stdout.write(`${contents}\n`);
     return 0;
   }
 
   if (command === 'check') {
     const schemaPath = getOption(args, '--schema');
     if (!schemaPath) {
-      console.error('Missing required --schema value for check');
+      process.stderr.write('Missing required --schema value for check\n');
       printUsage();
+      return 1;
+    }
+
+    const schema = await loadSchemaFromFile(schemaPath);
+    try {
+      checkEnvironment(schema, process.env);
+      process.stdout.write('Environment variables look valid.\n');
+      return 0;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      process.stderr.write(`${message}\n`);
       return 1;
     }
   }
 
-  console.error(`Unknown command: ${command}`);
+  process.stderr.write(`Unknown command: ${command}\n`);
   printUsage();
   return 1;
 }
 
-export async function cli(argv: string[] = process.argv.slice(2)): Promise<number> {
-  return runCli(argv);
-}
-
-if (process.argv[1] && /(?:\\|\/)(?:src\\|dist\\)?cli\.(?:js|cjs|mjs)$/.test(process.argv[1])) {
-  void cli().then((code) => {
-    process.exit(code);
-  });
-}
-
-export default cli;
+void runCli().then((code) => {
+  process.exit(code);
+});

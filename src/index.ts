@@ -6,6 +6,4 @@ export function getVersion(): string {
 
 export { EnvGuardError, envGuard, defineSchema } from './envGuard';
 export type { EnvGuardIssue, EnvGuardIssueCode, OnErrorHandler, EnvGuardOptions } from './envGuard';
-export { checkEnvironment, cli, generateEnvExample } from './cli';
-export type { CliCommand, CliOptions, EnvExampleOptions } from './cli';
 export type { EnvField, EnvGuardSchema, EnvSource, InferEnv } from './types';
