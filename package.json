@@ -37,6 +37,9 @@
       "require": "./dist/cli.cjs"
     }
   },
+  "bin": {
+    "env-guard": "./dist/cli.js"
+  },
   "files": [
     "dist"
   ],
