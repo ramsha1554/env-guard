@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { checkEnvironment, generateEnvExample } from './cli';
+import { checkEnvironment, generateEnvExample } from './cliCore';
 
 describe('cli helpers', () => {
   it('builds a .env.example preview from a schema', () => {
