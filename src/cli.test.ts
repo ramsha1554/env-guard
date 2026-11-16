@@ -39,11 +39,11 @@ describe('CLI helpers', () => {
   });
 });
 
-describe('env-guard CLI', () => {
+describe('envguard-config CLI', () => {
   let directory: string;
 
   beforeEach(async () => {
-    directory = await mkdtemp(join(tmpdir(), 'env-guard-cli-'));
+    directory = await mkdtemp(join(tmpdir(), 'envguard-config-cli-'));
   });
 
   afterEach(async () => {
@@ -91,7 +91,7 @@ describe('env-guard CLI', () => {
     });
 
     expect(exitCode).toBe(1);
-    expect(output.join('')).toContain('env-guard: 2 problems found');
+    expect(output.join('')).toContain('envguard-config: 2 problems found');
     expect(output.join('')).toContain('PORT');
     expect(output.join('')).toContain('MONGO_URI');
   });
@@ -124,7 +124,7 @@ describe('env-guard CLI', () => {
     });
 
     expect(exitCode).toBe(0);
-    expect(output.join('')).toContain('env-guard generate');
-    expect(output.join('')).toContain('env-guard check');
+    expect(output.join('')).toContain('envguard-config generate');
+    expect(output.join('')).toContain('envguard-config check');
   });
 });

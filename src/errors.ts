@@ -43,7 +43,7 @@ export type EnvGuardIssue = {
 
 function formatErrorMessage(issues: readonly EnvGuardIssue[]): string {
   const details = issues.map((issue) => `  x ${issue.key}: ${issue.message}`);
-  return `env-guard: ${issues.length} problem${issues.length === 1 ? '' : 's'} found\n${details.join('\n')}`;
+  return `envguard-config: ${issues.length} problem${issues.length === 1 ? '' : 's'} found\n${details.join('\n')}`;
 }
 
 /** Base validation error retained for compatibility with earlier releases. */

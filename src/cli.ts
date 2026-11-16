@@ -6,8 +6,8 @@ import { checkEnvironment, generateEnvExample } from './cliCore';
 import type { EnvGuardSchema, EnvSource } from './types';
 
 const usage = `Usage:
-  env-guard generate --schema <file> [--output <file>]
-  env-guard check --schema <file>
+  envguard-config generate --schema <file> [--output <file>]
+  envguard-config check --schema <file>
 
 The schema file must export a default object or a named "schema" or "env" export.
 `;
@@ -114,7 +114,7 @@ function writeError(message: string): void {
   process.stderr.write(message);
 }
 
-/** Runs the env-guard CLI and returns its process exit code. */
+/** Runs the envguard-config CLI and returns its process exit code. */
 export async function runCli(
   args: string[] = process.argv.slice(2),
   options: CliOptions = {}

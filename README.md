@@ -1,4 +1,4 @@
-# env-guard
+# envguard-config
 
 A zero-dependency TypeScript library for validating `process.env` values at
 startup. It returns typed values, aggregates actionable errors, and supports
@@ -7,13 +7,13 @@ Node.js 18 and newer.
 ## Install
 
 ```sh
-npm install env-guard
+npm install envguard-config
 ```
 
 ## Quick start
 
 ```ts
-import { envGuard } from 'env-guard';
+import { envGuard } from 'envguard-config';
 
 const env = envGuard({
   PORT: { type: 'number', default: 5000, integer: true, min: 1 },
@@ -44,7 +44,7 @@ Invalid values are reported together in an `EnvValidationError`, which extends
 
 ## CLI
 
-Create a schema module, for example `env-guard.config.mjs`:
+Create a schema module, for example `envguard-config.config.mjs`:
 
 ```js
 export default {
@@ -58,8 +58,8 @@ export. Generate `.env.example` or validate variables in the current process
 environment:
 
 ```sh
-npx env-guard generate --schema ./env-guard.config.mjs
-npx env-guard check --schema ./env-guard.config.mjs
+npx envguard-config generate --schema ./envguard-config.config.mjs
+npx envguard-config check --schema ./envguard-config.config.mjs
 ```
 
 Use `--output <file>` with `generate` to choose another output path. The CLI
