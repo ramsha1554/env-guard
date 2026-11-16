@@ -1,7 +1,6 @@
-import { describe, expect, expectTypeOf, it } from 'vitest';
+import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 
-import { envGuard, type EnvGuardSchema } from './envGuard';
-import { EnvValidationError } from './errors';
+import { EnvGuardError, EnvValidationError, envGuard, type EnvGuardSchema } from './envGuard';
 
 describe('envGuard', () => {
   it('parses values from a source object and freezes the result', () => {
@@ -33,23 +32,13 @@ describe('envGuard', () => {
 
   it('throws when a required value is missing', () => {
     expect(() =>
-      envGuard(
-        {
-          MONGO_URI: { type: 'string', required: true },
-        },
-        { source: {} }
-      )
+      envGuard({ MONGO_URI: { type: 'string', required: true } }, { source: {} })
     ).toThrow(/MONGO_URI.*required/i);
   });
 
   it('throws when a value fails type parsing', () => {
     expect(() =>
-      envGuard(
-        {
-          PORT: { type: 'number' },
-        },
-        { source: { PORT: 'abc' } }
-      )
+      envGuard({ PORT: { type: 'number' } }, { source: { PORT: 'abc' } })
     ).toThrow(/PORT.*number/i);
   });
 
@@ -66,6 +55,7 @@ describe('envGuard', () => {
       throw new Error('Expected envGuard to reject invalid values');
     } catch (error) {
       expect(error).toBeInstanceOf(EnvValidationError);
+      expect(error).toBeInstanceOf(EnvGuardError);
       expect(error).toMatchObject({
         code: 'ENV_VALIDATION_ERROR',
         issues: [
@@ -109,20 +99,17 @@ describe('envGuard', () => {
     expectTypeOf(env.ENABLE_CACHE).toEqualTypeOf<boolean>();
     expectTypeOf(env.API_URL).toEqualTypeOf<string | undefined>();
     expectTypeOf(env.FEATURE_FLAG).toEqualTypeOf<string | undefined>();
+  });
 
-    type Expected = {
-      PORT: number;
-      NODE_ENV: 'development' | 'production' | undefined;
-      ENABLE_CACHE: boolean;
-      API_URL: string | undefined;
-      FEATURE_FLAG: string | undefined;
-    };
+  it('supports custom onError handlers', () => {
+    const handler = vi.fn();
 
-    const checked: Expected = env;
-    expectTypeOf(checked.PORT).toEqualTypeOf<number>();
-    expectTypeOf(checked.NODE_ENV).toEqualTypeOf<'development' | 'production' | undefined>();
-    expectTypeOf(checked.ENABLE_CACHE).toEqualTypeOf<boolean>();
-    expectTypeOf(checked.API_URL).toEqualTypeOf<string | undefined>();
-    expectTypeOf(checked.FEATURE_FLAG).toEqualTypeOf<string | undefined>();
+    envGuard(
+      { PORT: { type: 'number', required: true } },
+      { source: { PORT: 'nope' }, onError: handler }
+    );
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0]?.[0]).toBeInstanceOf(EnvValidationError);
   });
 });

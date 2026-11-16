@@ -1,12 +1,18 @@
 import { parseFieldValue } from './parsers';
-import { EnvValidationError, type EnvValidationIssue } from './errors';
+import { EnvGuardError, EnvValidationError, type EnvValidationIssue } from './errors';
 import type { EnvField, EnvGuardSchema, EnvSource, InferEnv } from './types';
+
+export type OnErrorHandler = (error: EnvGuardError) => unknown;
 
 export type EnvGuardOptions = {
   source?: EnvSource | Record<string, unknown>;
+  onError?: 'throw' | 'exit' | OnErrorHandler;
 };
 
-export function envGuard<T extends EnvGuardSchema>(schema: T, options: EnvGuardOptions = {}): InferEnv<T> {
+export function envGuard<T extends EnvGuardSchema>(
+  schema: T,
+  options: EnvGuardOptions = {}
+): InferEnv<T> {
   const source = options.source ?? process.env;
   const result = {} as Record<string, unknown>;
   const issues: EnvValidationIssue[] = [];
@@ -42,7 +48,19 @@ export function envGuard<T extends EnvGuardSchema>(schema: T, options: EnvGuardO
   }
 
   if (issues.length > 0) {
-    throw new EnvValidationError(issues);
+    const error = new EnvValidationError(issues);
+
+    if (options.onError === 'exit') {
+      process.stderr.write(`${error.message}\n`);
+      process.exit(1);
+    }
+
+    if (typeof options.onError === 'function') {
+      options.onError(error);
+      return undefined as unknown as InferEnv<T>;
+    }
+
+    throw error;
   }
 
   return Object.freeze(result) as InferEnv<T>;
@@ -52,4 +70,11 @@ export function defineSchema<T extends EnvGuardSchema>(schema: T): T {
   return schema;
 }
 
+export { EnvGuardError, EnvValidationError };
+export type {
+  EnvGuardIssue,
+  EnvGuardIssueCode,
+  EnvValidationIssue,
+  EnvValidationIssueCode,
+} from './errors';
 export type { EnvField, EnvGuardSchema, EnvSource, InferEnv } from './types';

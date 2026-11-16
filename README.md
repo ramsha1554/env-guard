@@ -37,10 +37,10 @@ Fields may be optional, required, or have a default. String fields support
 `integer`. Boolean values accept `true`/`false`, `1`/`0`, `yes`/`no`, and
 `on`/`off`.
 
-Invalid values are reported together in an `EnvValidationError`. Its stable
-`code` is `ENV_VALIDATION_ERROR`; each item in `issues` has a variable `key`, a
-specific issue `code`, and a readable `message`. Values marked `secret: true`
-are redacted from error messages.
+Invalid values are reported together in an `EnvValidationError`, which extends
+`EnvGuardError`. Its stable `code` is `ENV_VALIDATION_ERROR`; each item in
+`issues` has a variable `key`, a specific issue `code`, and a readable
+`message`. Values marked `secret: true` are redacted from error messages.
 
 ## CLI
 
@@ -53,10 +53,9 @@ export default {
 };
 ```
 
-The schema module may also export the object as a named `schema` export.
-
-Generate `.env.example` from the schema or validate variables in the current
-process environment:
+The schema module may also export the object as a named `schema` or `env`
+export. Generate `.env.example` or validate variables in the current process
+environment:
 
 ```sh
 npx env-guard generate --schema ./env-guard.config.mjs

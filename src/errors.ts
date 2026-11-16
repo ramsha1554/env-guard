@@ -20,26 +20,56 @@ export type EnvValidationIssue = {
   readonly message: string;
 };
 
-/** Reports one or more environment validation failures with stable issue codes. */
-export class EnvValidationError extends Error {
-  readonly code = 'ENV_VALIDATION_ERROR' as const;
-  readonly issues: readonly EnvValidationIssue[];
+/** Issue codes retained for compatibility with the earlier EnvGuardError API. */
+export type EnvGuardIssueCode =
+  | 'MISSING'
+  | 'INVALID_TYPE'
+  | 'TOO_SHORT'
+  | 'TOO_LONG'
+  | 'PATTERN_MISMATCH'
+  | 'OUT_OF_RANGE'
+  | 'NOT_INTEGER'
+  | 'NOT_IN_ENUM'
+  | 'INVALID_URL'
+  | EnvValidationIssueCode;
 
-  constructor(issues: readonly EnvValidationIssue[]) {
+/** A validation issue exposed by EnvGuardError. */
+export type EnvGuardIssue = {
+  readonly key: string;
+  readonly code: EnvGuardIssueCode;
+  readonly message: string;
+  readonly received?: unknown;
+};
+
+function formatErrorMessage(issues: readonly EnvGuardIssue[]): string {
+  const details = issues.map((issue) => `  x ${issue.key}: ${issue.message}`);
+  return `env-guard: ${issues.length} problem${issues.length === 1 ? '' : 's'} found\n${details.join('\n')}`;
+}
+
+/** Base validation error retained for compatibility with earlier releases. */
+export class EnvGuardError extends Error {
+  readonly code: string = 'ENV_GUARD_ERROR';
+  readonly issues: readonly EnvGuardIssue[];
+
+  constructor(issues: readonly EnvGuardIssue[]) {
     if (issues.length === 0) {
-      throw new TypeError('EnvValidationError requires at least one issue');
+      throw new TypeError('EnvGuardError requires at least one issue');
     }
 
-    const snapshot = issues.map((issue) => Object.freeze({ ...issue }));
-    const details = snapshot.map((issue) => `${issue.key}: ${issue.message}`);
+    super(formatErrorMessage(issues));
+    this.name = 'EnvGuardError';
+    this.issues = Object.freeze(issues.map((issue) => Object.freeze({ ...issue })));
+  }
+}
 
-    super(
-      snapshot.length === 1
-        ? details[0]
-        : `Environment validation failed with ${snapshot.length} issues:\n${details.join('\n')}`
-    );
+/** Reports environment validation failures with stable issue codes. */
+export class EnvValidationError extends EnvGuardError {
+  override readonly code = 'ENV_VALIDATION_ERROR' as const;
+  override readonly issues: readonly EnvValidationIssue[];
 
+  constructor(issues: readonly EnvValidationIssue[]) {
+    super(issues);
     this.name = 'EnvValidationError';
-    this.issues = Object.freeze(snapshot);
+    this.issues = Object.freeze(issues.map((issue) => Object.freeze({ ...issue })));
   }
 }

@@ -24,9 +24,6 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "bin": {
-    "env-guard": "./dist/bin.js"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -39,6 +36,9 @@
       "import": "./dist/cli.js",
       "require": "./dist/cli.cjs"
     }
+  },
+  "bin": {
+    "env-guard": "./dist/bin.js"
   },
   "files": [
     "dist"
