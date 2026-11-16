@@ -1,8 +1,8 @@
 # env-guard
 
-Validate environment variables at startup with typed values and aggregated,
-actionable errors. `env-guard` has no runtime dependencies and supports Node.js 18
-and newer.
+A zero-dependency TypeScript library for validating `process.env` values at
+startup. It returns typed values, aggregates actionable errors, and supports
+Node.js 18 and newer.
 
 ## Install
 
@@ -10,7 +10,7 @@ and newer.
 npm install env-guard
 ```
 
-## Validate environment variables
+## Quick start
 
 ```ts
 import { envGuard } from 'env-guard';
@@ -21,7 +21,7 @@ const env = envGuard({
   JWT_SECRET: { type: 'string', required: true, minLength: 32, secret: true },
   NODE_ENV: {
     type: 'enum',
-    values: ['development', 'production', 'test'],
+    values: ['development', 'production', 'test'] as const,
     default: 'development',
   },
   ENABLE_CACHE: { type: 'boolean', default: false },
@@ -52,6 +52,8 @@ export default {
   MONGO_URI: { type: 'string', required: true },
 };
 ```
+
+The schema module may also export the object as a named `schema` export.
 
 Generate `.env.example` from the schema or validate variables in the current
 process environment:
