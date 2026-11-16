@@ -1,6 +1,6 @@
 {
   "name": "env-guard",
-  "version": "0.0.0",
+  "version": "1.0.4",
   "description": "Validate environment variables at startup with typed values, clear errors, and an auto-generated .env.example.",
   "license": "MIT",
   "keywords": [
@@ -38,7 +38,7 @@
     }
   },
   "bin": {
-    "env-guard": "./dist/cli.js"
+    "env-guard": "./dist/bin.js"
   },
   "files": [
     "dist"

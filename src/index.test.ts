@@ -4,7 +4,7 @@ import { getVersion, version } from './index';
 
 describe('env-guard package', () => {
   it('exports the current package version', () => {
-    expect(version).toBe('0.0.0');
-    expect(getVersion()).toBe('0.0.0');
+    expect(version).toBe('1.0.4');
+    expect(getVersion()).toBe('1.0.4');
   });
 });

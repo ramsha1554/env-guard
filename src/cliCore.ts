@@ -1,4 +1,4 @@
-import { envGuard } from './index';
+import { envGuard } from './envGuard';
 import type { EnvField, EnvGuardSchema, EnvSource, InferEnv } from './types';
 
 export type EnvExampleOptions = {

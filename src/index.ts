@@ -1,9 +1,16 @@
-export const version = '0.0.0';
+export const version = '1.0.4';
 
 export function getVersion(): string {
   return version;
 }
 
-export { EnvGuardError, envGuard, defineSchema } from './envGuard';
-export type { EnvGuardIssue, EnvGuardIssueCode, OnErrorHandler, EnvGuardOptions } from './envGuard';
+export { defineSchema, envGuard } from './envGuard';
+export { EnvGuardError, EnvValidationError } from './errors';
+export type {
+  EnvGuardIssue,
+  EnvGuardIssueCode,
+  EnvValidationIssue,
+  EnvValidationIssueCode,
+} from './errors';
+export type { EnvGuardOptions, OnErrorHandler } from './envGuard';
 export type { EnvField, EnvGuardSchema, EnvSource, InferEnv } from './types';

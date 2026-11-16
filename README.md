@@ -1,6 +1,14 @@
 # env-guard
 
-A zero-dependency TypeScript library for validating `process.env` values at startup.
+A zero-dependency TypeScript library for validating `process.env` values at
+startup. It returns typed values, aggregates actionable errors, and supports
+Node.js 18 and newer.
+
+## Install
+
+```sh
+npm install env-guard
+```
 
 ## Quick start
 
@@ -8,25 +16,51 @@ A zero-dependency TypeScript library for validating `process.env` values at star
 import { envGuard } from 'env-guard';
 
 const env = envGuard({
-  PORT: { type: 'number', default: 3000 },
-  NODE_ENV: { type: 'enum', values: ['development', 'test', 'production'] as const, default: 'development' },
+  PORT: { type: 'number', default: 5000, integer: true, min: 1 },
   MONGO_URI: { type: 'string', required: true },
   JWT_SECRET: { type: 'string', required: true, minLength: 32, secret: true },
+  NODE_ENV: {
+    type: 'enum',
+    values: ['development', 'production', 'test'] as const,
+    default: 'development',
+  },
+  ENABLE_CACHE: { type: 'boolean', default: false },
+  API_URL: { type: 'url', protocols: ['https'] },
 });
+
+env.PORT; // number
 ```
+
+Supported field types are `string`, `number`, `boolean`, `enum`, and `url`.
+Fields may be optional, required, or have a default. String fields support
+`minLength`, `maxLength`, and `pattern`; number fields support `min`, `max`, and
+`integer`. Boolean values accept `true`/`false`, `1`/`0`, `yes`/`no`, and
+`on`/`off`.
+
+Invalid values are reported together in an `EnvValidationError`, which extends
+`EnvGuardError`. Its stable `code` is `ENV_VALIDATION_ERROR`; each item in
+`issues` has a variable `key`, a specific issue `code`, and a readable
+`message`. Values marked `secret: true` are redacted from error messages.
 
 ## CLI
 
-Generate a starter `.env.example` file from a schema module:
+Create a schema module, for example `env-guard.config.mjs`:
 
-```bash
-npx env-guard generate --schema ./env-schema.ts --output .env.example
+```js
+export default {
+  PORT: { type: 'number', default: 5000, description: 'HTTP server port' },
+  MONGO_URI: { type: 'string', required: true },
+};
 ```
 
-Validate the current environment against the same schema:
+The schema module may also export the object as a named `schema` or `env`
+export. Generate `.env.example` or validate variables in the current process
+environment:
 
-```bash
-npx env-guard check --schema ./env-schema.ts
+```sh
+npx env-guard generate --schema ./env-guard.config.mjs
+npx env-guard check --schema ./env-guard.config.mjs
 ```
 
-The schema file should export a default object or a named `schema`/`env` value that matches the `EnvGuardSchema` shape.
+Use `--output <file>` with `generate` to choose another output path. The CLI
+checks `process.env`; it does not read `.env` files.
