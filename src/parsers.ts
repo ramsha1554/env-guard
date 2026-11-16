@@ -1,20 +1,37 @@
 import type { BooleanField, EnvField, NumberField, StringField, UrlField } from './types';
+import { EnvValidationError, type EnvValidationIssueCode } from './errors';
+
+function fail(key: string, code: EnvValidationIssueCode, message: string): never {
+  throw new EnvValidationError([{ key, code, message }]);
+}
+
+function received(value: unknown, secret: boolean): string {
+  return secret ? ' (value redacted)' : ` (got ${JSON.stringify(value)})`;
+}
 
 export function parseStringValue(key: string, value: unknown, field: StringField): string {
   const text = typeof value === 'string' ? value : String(value ?? '');
 
   if (field.minLength !== undefined && text.length < field.minLength) {
-    throw new Error(`${key} must be at least ${field.minLength} characters long (got ${JSON.stringify(text)})`);
+    fail(
+      key,
+      'ENV_STRING_TOO_SHORT',
+      `must be at least ${field.minLength} characters long${received(text, field.secret === true)}`
+    );
   }
 
   if (field.maxLength !== undefined && text.length > field.maxLength) {
-    throw new Error(`${key} must be at most ${field.maxLength} characters long (got ${JSON.stringify(text)})`);
+    fail(
+      key,
+      'ENV_STRING_TOO_LONG',
+      `must be at most ${field.maxLength} characters long${received(text, field.secret === true)}`
+    );
   }
 
   if (field.pattern !== undefined) {
     const pattern = typeof field.pattern === 'string' ? new RegExp(field.pattern) : field.pattern;
     if (!pattern.test(text)) {
-      throw new Error(`${key} does not match the required pattern`);
+      fail(key, 'ENV_STRING_PATTERN', 'does not match the required pattern');
     }
   }
 
@@ -25,25 +42,25 @@ export function parseNumberValue(key: string, value: unknown, field: NumberField
   const raw = typeof value === 'string' ? value.trim() : String(value ?? '');
 
   if (raw === '' || raw === 'null' || raw === 'undefined') {
-    throw new Error(`${key} must be a number (got ${JSON.stringify(value)})`);
+    fail(key, 'ENV_INVALID_NUMBER', `must be a number${received(value, field.secret === true)}`);
   }
 
   const parsed = Number(raw);
 
   if (!Number.isFinite(parsed)) {
-    throw new Error(`${key} must be a number (got ${JSON.stringify(value)})`);
+    fail(key, 'ENV_INVALID_NUMBER', `must be a number${received(value, field.secret === true)}`);
   }
 
   if (field.integer && !Number.isInteger(parsed)) {
-    throw new Error(`${key} must be an integer (got ${JSON.stringify(value)})`);
+    fail(key, 'ENV_NUMBER_NOT_INTEGER', `must be an integer${received(value, field.secret === true)}`);
   }
 
   if (field.min !== undefined && parsed < field.min) {
-    throw new Error(`${key} must be >= ${field.min} (got ${JSON.stringify(value)})`);
+    fail(key, 'ENV_NUMBER_TOO_SMALL', `must be >= ${field.min}${received(value, field.secret === true)}`);
   }
 
   if (field.max !== undefined && parsed > field.max) {
-    throw new Error(`${key} must be <= ${field.max} (got ${JSON.stringify(value)})`);
+    fail(key, 'ENV_NUMBER_TOO_LARGE', `must be <= ${field.max}${received(value, field.secret === true)}`);
   }
 
   return parsed;
@@ -62,15 +79,23 @@ export function parseBooleanValue(key: string, value: unknown, _field: BooleanFi
     return false;
   }
 
-  throw new Error(`${key} must be a boolean (got ${JSON.stringify(value)})`);
+  fail(key, 'ENV_INVALID_BOOLEAN', `must be a boolean${received(value, _field.secret === true)}`);
 }
 
-export function parseEnumValue<T extends readonly unknown[]>(key: string, value: unknown, field: { values: T }): T[number] {
+export function parseEnumValue<T extends readonly unknown[]>(
+  key: string,
+  value: unknown,
+  field: { values: T; secret?: boolean }
+): T[number] {
   const raw = typeof value === 'string' ? value.trim() : String(value ?? '');
   const chosen = field.values.find((candidate) => String(candidate) === raw);
 
   if (chosen === undefined) {
-    throw new Error(`${key} must be one of ${field.values.map(String).join(', ')} (got ${JSON.stringify(value)})`);
+    fail(
+      key,
+      'ENV_INVALID_ENUM',
+      `must be one of ${field.values.map(String).join(', ')}${received(value, field.secret === true)}`
+    );
   }
 
   return chosen;
@@ -78,21 +103,22 @@ export function parseEnumValue<T extends readonly unknown[]>(key: string, value:
 
 export function parseUrlValue(key: string, value: unknown, field: UrlField): string {
   const raw = typeof value === 'string' ? value.trim() : String(value ?? '');
+  let parsed: URL;
 
   try {
-    const parsed = new URL(raw);
-
-    if (field.protocols && field.protocols.length > 0) {
-      const normalized = parsed.protocol.replace(':', '');
-      if (!field.protocols.map((protocol) => protocol.toLowerCase()).includes(normalized.toLowerCase())) {
-        throw new Error(`${key} has an unsupported protocol`);
-      }
-    }
-
-    return raw;
+    parsed = new URL(raw);
   } catch {
-    throw new Error(`${key} must be a valid URL (got ${JSON.stringify(value)})`);
+    fail(key, 'ENV_INVALID_URL', `must be a valid URL${received(value, field.secret === true)}`);
   }
+
+  if (field.protocols && field.protocols.length > 0) {
+    const normalized = parsed.protocol.replace(':', '');
+    if (!field.protocols.map((protocol) => protocol.toLowerCase()).includes(normalized.toLowerCase())) {
+      fail(key, 'ENV_UNSUPPORTED_URL_PROTOCOL', 'has an unsupported protocol');
+    }
+  }
+
+  return raw;
 }
 
 export function parseFieldValue(key: string, field: EnvField, value: unknown): unknown {

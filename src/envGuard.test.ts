@@ -1,6 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { envGuard, type EnvGuardSchema } from './envGuard';
+import { EnvValidationError } from './errors';
 
 describe('envGuard', () => {
   it('parses values from a source object and freezes the result', () => {
@@ -50,6 +51,46 @@ describe('envGuard', () => {
         { source: { PORT: 'abc' } }
       )
     ).toThrow(/PORT.*number/i);
+  });
+
+  it('aggregates validation issues and redacts secret values', () => {
+    try {
+      envGuard(
+        {
+          PORT: { type: 'number' },
+          MONGO_URI: { type: 'string', required: true },
+          JWT_SECRET: { type: 'string', minLength: 20, secret: true },
+        },
+        { source: { PORT: 'not-a-number', JWT_SECRET: 'private-value' } }
+      );
+      throw new Error('Expected envGuard to reject invalid values');
+    } catch (error) {
+      expect(error).toBeInstanceOf(EnvValidationError);
+      expect(error).toMatchObject({
+        code: 'ENV_VALIDATION_ERROR',
+        issues: [
+          { key: 'PORT', code: 'ENV_INVALID_NUMBER' },
+          { key: 'MONGO_URI', code: 'ENV_REQUIRED' },
+          { key: 'JWT_SECRET', code: 'ENV_STRING_TOO_SHORT' },
+        ],
+      });
+      expect((error as Error).message).not.toContain('private-value');
+    }
+  });
+
+  it('reports an unsupported URL protocol with its own issue code', () => {
+    try {
+      envGuard(
+        { API_URL: { type: 'url', protocols: ['https'] } },
+        { source: { API_URL: 'http://example.com' } }
+      );
+      throw new Error('Expected envGuard to reject an unsupported protocol');
+    } catch (error) {
+      expect(error).toBeInstanceOf(EnvValidationError);
+      expect(error).toMatchObject({
+        issues: [{ key: 'API_URL', code: 'ENV_UNSUPPORTED_URL_PROTOCOL' }],
+      });
+    }
   });
 
   it('infers optional and defaulted types correctly', () => {
